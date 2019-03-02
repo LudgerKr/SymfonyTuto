@@ -12,10 +12,6 @@
 - cd Tutoriel
 - composer require server --dev
 
-### Launch Symfony's server
-
-- php bin/console server:run
-
 ## Database
 ### Import
 
