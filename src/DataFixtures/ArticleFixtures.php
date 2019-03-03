@@ -14,9 +14,9 @@ class ArticleFixtures extends Fixture
     public function load(ObjectManager $manager)
     {
 
-        $faker = \Faker\Factory::create('fr_Fr');
+        $faker = \Faker\Factory::create('fr_FR');
 
-        // Créer 3 fausses catéghories
+        // Créer 3 fausses catégories
 
         for ($i = 1; $i <= 3; $i++) {
             $category = new Category();
