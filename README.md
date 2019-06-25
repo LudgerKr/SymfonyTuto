@@ -4,7 +4,7 @@
 ### Require
 
 #### php7.2.*
-#### mysql 5.6 or highger
+#### mysql 5.6 or higher
 #### composer
 
 ### Install of Symfony's internal server dev
