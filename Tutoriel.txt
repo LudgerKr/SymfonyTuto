@@ -1,0 +1,354 @@
+Composer : Gestionnaire de librairie/dépendances php, équivalence de bundler, npm en nodejs.
+    
+Symfony : Ensemble de composants qui peuvent être utilisé un à un, mis ensemble les uns avec les autres forment un framework.
+1 - Très utilisé, actif
+2 - Simple d'utilisation
+3 - Documentation bien fait
+    
+Création symfony :
+    
+- composer create-project symfony/website-skeleton Tutoriel
+    
+CLI : Command line interface, des assistants qu'on peut appeler des lignes de commandes qui peut nous aider à gerer des applications symfony. 
+    
+- composer require server --dev
+    
+Utiliser le serveur interne de symfony :
+    
+php bin/console server:run
+    
+Le coeur de symfony
+    
+- Controller : Traitements
+- Doctrine : Accès aux données
+- Twig : Langage de rendu
+    
+La logique du Controller
+    
+Le navigateur appelle une route, le serveur recoit la requête, le serveur renvoie une réponse, le navigateur utilise la réponse.
+Ecoute une adresse, fabriquer une réponse, et renvoyer au navigateur.
+    
+src/ va contenir les codes php et templates va nous permettre de gerer les dossiers de rendu ave twig
+    
+    
+creer un controller : php bin/console make:controller
+    
+
+Langage de rendu Twig
+    
+Simplicité : Facilite l'écriture des affichages, apporte beaucoup de fonctionnalité comme des filtres, absence de PHP, permet de d'abstraire les affichages de balises PHP, plus simple pour un intégrateur. Librairie, utilisable sans symfony.
+Principale fonctionnalités: 
+- Interpolation {{ var }} = affiche le contenu d'une variable
+- Commandes {% cmd %} = permet d'appeler une commande / structure de contrôle
+    
+base.html.twig est le gabarit de base/général, d'une page.
+    
+Twig : Surcharge de blocks, on projéte du contenu dans les différents blocks du template
+    
+L'ORM de Symfony : Doctrine
+Object relationnal mapping, brique logiciel qui fait le lien entre une application et une base de données. Ne pas toucher la base de données mais d'y interagir indirectement via des classes.
+Doctrine, on peut tout gérer grâce à des outils
+Entity : Représente une table
+Manager : Permet de manipuler une ligne / Insertion / Mise à jour / Suppression
+Repository : Permet de faire des sélections
+    
+Les migrations dans Symfony : privilégier les fichiers
+script permettant de passer la base de données d'un état A à un état B
+    
+Migration #1
+Je crée 2 tables
+    
+Migration #2
+Je modifie les champs d'une table
+J'en crée une autre
+J'en supprime une autre
+    
+    
+
+Fixtures : script qui va crée des fausses données dans les bases de données
+Créer des jeux de fausses données, éxécutable à souhaite, réutillisable par les autres.
+    
+Créer une base de données :
+Configuration dans le fichier .env
+DATABASE_URL=mysql://db_user:db_password@127.0.0.1:3306/db_name
+    
+php bin/console doctrine:database:create
+    
+Créer une table :
+php bin/console make:entity
+    
+Importer les tables : 
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+    
+
+Installer des fixtures :
+composer require orm-fixtures
+php bin/console make:fixtures
+    
+Créer des articles à la volée
+    
+class ArticleFixtures extends Fixture
+{
+    public function load(ObjectManager $manager)
+    {
+        for($i =1; $i < 10; $i++) {
+            $article = new Article();
+            $article->setTitle("Titre de l'article n°$i")
+                    ->setContent("<p>Contenu de l'article n°$i</p>")
+                    ->setImage("http://placehold.it/350x150")
+                    ->setCreatedAt(new \DateTime());
+    
+            $manager->persist($article); // prepare la fonction load qui va inserer les données dans la base de données
+        }
+    
+        $manager->flush(); // exécute la fonction load
+    }
+}
+    
+php bin/console doctrine:fixtures:load
+    
+Avec le contrôleur on peut avoir accès au repository pour pouvoir faire des selection dans la base de données.
+    
+use App\Entity\Article;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Routing\Annotation\Route;
+    
+class BlogController extends AbstractController
+{
+    /**
+     * @Route("/blog", name="blog")
+     */
+    public function index()
+    {
+        $repo = $this->getDoctrine()->getRepository(Article::class);
+        return $this->render('blog/index.html.twig', [
+            'controller_name' => 'BlogController',
+        ]);
+    }
+    
+Filtres Twig : formatter une variable avant de l'afficher 
+    
+Injection de dépendance, dans Symfony il y a un service container : tout ce qui contenu dans Symfony est géré par Symfony.
+Notion de dépendance : Quand une classe/fonction a besoin de quelque chose
+    
+ParamConvert : brique logiciel dans symfony qui voit la route avec un identifiant, du coup il va chercher tout seul la page, il convertit un paramètre en une entité.
+    
+    ----------------------------------------------------------------------------
+    
+Créer des formulaires dans Symfony
+    
+3 pilliers pour une page : une fonction / une route / une réponse (affichage / redirection)
+    
+Attention aux confusion de routes : quand 2 routes ont un pattern trop similaire
+    
+TWIG, fonction form : permet d'afficher simplement un formulaire Symfony
+TWIG, les templates : créer des templates de forms pour décoder leur affichage
+    
+php bin/console make:form
+Crée rapidemment un formulaire dans son propre fichier
+Ensuite dans le controller
+Remplacer 
+        $form = $this->createFormBuilder($article)
+                     ->add('title')
+                     ->add('content')
+                     ->add('image')
+                     ->getForm();
+Par 
+use App\Form\ArticleType;
+$form = $this->createForm(ArticleType::class, $article);
+    
+Dans le controller $form->handleRequest($request); le formulaire analyse la request donnée
+    
+Les contraintes Symfony : elles permettent de soumettre des données à des contraintes.
+    
+Dans l'entity article 
+    
+use Symfony\Component\Validator\Constraints as Assert;
+    
+	/**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\Length(min=5, max=255)
+     */
+    private $title;
+    
+    /**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\Url()
+     */
+    private $image;
+    
+    
+----------------------------------------------------------------------------
+    
+Les différentes relations d'entités.
+    
+Un article possède plusieurs catégorie : relation one to many
+    
+php bin/console make:entity
+Category
+title
+description
+articles type relation Article
+    
+Class ArrayCollection
+Un wrapper pour les tableaux
+un wrapper est un programme dont la fonction principale est d'appeler une autre fonction.
+    
+Librairie faker
+Permet de créer des données "fake" aléatoires
+    
+Installation
+composer require fzaninotto/faker --dev
+    
+Dans les fixtures
+$faker = Faker\Factory::create('fr_FR');
+    
+    
+    ----------------------------------------------------------------------------
+    
+    
+L'authentification dans Symfony
+    
+Le composant Security de Symfony
+    
+Firewalls : Quelles parties de l'application on protège ? Comment on protège ?
+Providers : Ou sont les données des utilisateurs (annuaire LDAP, base de données, fichiers ...) ? Comment reconnaître les utilisateurs ?
+Encoders : Comment créer des hash, quel algorithle ? Possibilités d'encodeurs différents en fonction des entités
+    
+Créer une entité utilisateur
+    
+Création du formulaire d'inscription
+    
+php bin/console make:form RegistrationType
+    
+Ajout dans entity user "comfirm_password", ne pas mettre ORM pour préciser qu'on rajoute un champ mais qu'il n'a rien à voir avec la base de données
+    
+Création du controller : 
+    
+php bin/console make:controller SecuityController
+    
+Masquer les caracteres du mot de passe :
+    
+Dans le RegistrationType, dans le builder
+Utiliser la classe PasswordType
+->add('password', PasswordType::class)
+    
+Hasher les mot de passes    
+Config/packages/security.yaml
+    
+security:
+    encoders:
+        App\Entity\User:
+            algorithm: bcrypt
+    
+Dans le SecurityController juste avant de persister
+UserPasswordEncoder : Interface qui permet d'encoder les mots de passes
+    
+$hash = $encoder->encodePassword($user, $user->getPassword());
+
+Dans entity
+    
+class User implements UserInterface
+    
+UserInterface : L'interface qu'on doit implémenter si on veut créer des users
+L'interface force à implémenter un certain nombre de fonction
+    
+    public function eraseCredentials()
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+    
+    public function getSalt()
+    {
+        // TODO: Implement getSalt() method.
+    }
+    
+    public function getRoles()
+    {
+        // TODO: Implement getRoles() method.
+        return['ROLE_USER'];
+    }
+
+Des users unique : faire en sorte que les emails soient uniques
+
+Login form, on met en place le formulaire de login
+
+Les providers de données = permet de dire comment fournir les données utilisateurs
+
+security.yaml
+
+security:
+    encoders:
+        App\Entity\User:
+            algorithm: bcrypt
+    # https://symfony.com/doc/current/security.html#where-do-users-come-from-user-providers
+    providers:
+        in_memory: { memory: ~ }
+        in_database:
+            entity:
+            class: App\Entity\User
+            property: email
+    firewalls:
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+        main:
+            anonymous: true
+
+            provider: in_database
+
+            form_login:
+                login_path: security_login
+                check_path: security_login
+
+
+Dans le login.html.twig
+
+_username et _password = noms des champs pris en compte pour la connexion par Symfony
+
+    <form action="{{ path('security_login') }}" method="post"> </form>
+
+Le chemin de la vérification du login
+
+On va mettre en place un logout
+
+    /**
+     * @Route("/deconnexion", name="security_logout")
+     */
+    public function logout()
+    {
+
+    }
+
+Cette fonction ne fera rien, car c'est le composant de sécurité qui va s'en charger, il faut juste qu'il y ait une route qui existe.
+
+Dans le security.yaml
+
+            logout:
+                path: security_logout
+                target: blog
+
+Maintenant comment twig sait si la l'utilisateur est connecté ou non
+Grosse variable global qui est "app" avec plein d'information dedans
+
+Créer un formulaire de commentaire
+
+php bin/console make:form
+
+    public function show(Article $article)
+    {
+        $comment = new Comment();
+        $form = $this->createForm(CommentType::class, $comment);
+
+        return $this->render('blog/show.html.twig', [
+            'article' => $article,
+            'commentForm' => $form->createView()
+        ]);
+    }
+
+Dans le twig
+
+        <h4>{{ article.comments | length }} commentaires : </h4>
+
+Retourne le nombre de commentaires
